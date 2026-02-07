@@ -411,13 +411,23 @@
   # Mediator list UI with dropdown for count + individual M1, M2, M3... selects
   # Using selectInput (dropdown) instead of numericInput to avoid infinite loop issues
   output$mediator_list_ui <- renderUI({
-    # Make this reactive to restore flags so it re-renders when restore starts
-    # Access restore flags to make them dependencies (even if we don't use the variables)
+    # Access restore flags - these are used to determine selected value during restore
     restore_pending <- rv$restore_mediators_pending
     expected_count <- rv$expected_mediator_count
     
+    # Also access the model to ensure this re-renders when model changes
+    current_model <- input$process_model
+    
+    print(paste("DEBUG: ===== mediator_list_ui renderUI START ====="))
+    print(paste("DEBUG: mediator_list_ui - restore_pending:", restore_pending, "expected_count:", expected_count, "model:", current_model))
+    print(paste("DEBUG: mediator_list_ui - rv$restore_mediators_pending (direct):", rv$restore_mediators_pending))
+    print(paste("DEBUG: mediator_list_ui - rv$expected_mediator_count (direct):", rv$expected_mediator_count))
+    print(paste("DEBUG: mediator_list_ui - dataset available:", !is.null(rv$original_dataset)))
+    print(paste("DEBUG: mediator_list_ui - model available:", !is.null(input$process_model) && input$process_model != ""))
+    
     # Check if dataset and model are available
     if(is.null(rv$original_dataset) || is.null(input$process_model) || input$process_model == "") {
+      print("DEBUG: mediator_list_ui returning NULL - dataset or model not available")
       return(NULL)
     }
     
@@ -425,7 +435,10 @@
     model_num <- as.numeric(input$process_model)
     mediator_enabled <- model_num >= 4 && model_num <= 92
     
+    print(paste("DEBUG: mediator_list_ui - model_num:", model_num, "mediator_enabled:", mediator_enabled))
+    
     if(!mediator_enabled) {
+      print(paste("DEBUG: mediator_list_ui returning NULL - model", model_num, "doesn't support mediators"))
       return(NULL)
     }
     
@@ -448,9 +461,12 @@
     
     # Get current count for determining how many M1, M2, M3... selects to show
     # During restore, use expected_mediator_count if available, otherwise use input$mediator_count
-    current_count <- if(isTRUE(rv$restore_mediators_pending) && !is.null(rv$expected_mediator_count) && rv$expected_mediator_count > 0) {
+    # CRITICAL: Use the local variables (restore_pending, expected_count) that were read at the start
+    # These are the values at the time this renderUI is called
+    current_count <- if(!is.null(restore_pending) && isTRUE(restore_pending) && !is.null(expected_count) && expected_count > 0) {
       # During restore, use the expected count
-      min(as.integer(rv$expected_mediator_count), max_mediators)
+      print(paste("DEBUG: mediator_list_ui - Using expected_count for current_count:", expected_count))
+      min(as.integer(expected_count), max_mediators)
     } else if(!is.null(input$mediator_count) && input$mediator_count != "" && !is.na(as.numeric(input$mediator_count)) && as.numeric(input$mediator_count) > 0) {
       # Normal operation - use input value
       min(as.integer(input$mediator_count), max_mediators)
@@ -460,13 +476,18 @@
     
     # Determine selected value for mediator_count dropdown
     # During restore, use expected_mediator_count, otherwise use input$mediator_count
-    selected_count <- if(isTRUE(rv$restore_mediators_pending) && !is.null(rv$expected_mediator_count) && rv$expected_mediator_count > 0) {
-      as.character(rv$expected_mediator_count)
+    selected_count <- if(!is.null(restore_pending) && isTRUE(restore_pending) && !is.null(expected_count) && expected_count > 0) {
+      print(paste("DEBUG: mediator_list_ui - Using expected_count for selected_count:", expected_count))
+      as.character(expected_count)
     } else if(!is.null(input$mediator_count) && input$mediator_count != "" && !is.na(as.numeric(input$mediator_count)) && as.numeric(input$mediator_count) > 0) {
       input$mediator_count
     } else {
       ""
     }
+    
+    print(paste("DEBUG: mediator_list_ui - current_count:", current_count, "selected_count:", selected_count, "restore_pending:", restore_pending, "expected_count:", expected_count))
+    print(paste("DEBUG: mediator_list_ui - Will create mediator_count selectInput with selected =", selected_count))
+    print(paste("DEBUG: mediator_list_ui - Will create", current_count, "mediator input(s)"))
     
     tagList(
       # Number of mediators dropdown
@@ -492,7 +513,11 @@
         })
       }
     )
+    # Don't print at the end - it might get captured in the UI
+    # print("DEBUG: ===== mediator_list_ui renderUI END =====")
   })
+  # Ensure mediator_list_ui doesn't get suspended and re-renders when dependencies change
+  outputOptions(output, "mediator_list_ui", suspendWhenHidden = FALSE)
   
   # Output reactive to indicate if dataset is loaded (for UI conditional rendering)
   output$dataset_loaded <- reactive({
@@ -511,7 +536,9 @@
     # Skip if we're restoring mediators from saved settings
     # The restore observer will handle setting the mediator values after UI regenerates
     if(isTRUE(rv$restore_mediators_pending)) {
-      print("DEBUG: Mediator count changed during restore - skipping clear, restore observer will handle values")
+      print(paste("DEBUG: Mediator count changed during restore - skipping clear. Current count:", 
+                  if(!is.null(input$mediator_count) && input$mediator_count != "") input$mediator_count else "EMPTY",
+                  "Expected:", rv$expected_mediator_count))
       return()
     }
     
@@ -548,8 +575,17 @@
   
   # Dynamically generate variable selectors based on model
   output$variable_selectors <- renderUI({
+    # CRITICAL: Access restore flags to make this reactive to them
+    # This ensures variable_selectors (and nested mediator_list_ui) re-renders when restore flags are set
+    restore_mediators_pending <- rv$restore_mediators_pending
+    expected_mediator_count <- rv$expected_mediator_count
+    
+    # Force dependency on restore flags
+    if(!is.null(restore_mediators_pending)) restore_mediators_pending
+    if(!is.null(expected_mediator_count)) expected_mediator_count
+    
     # Debug output
-    print(paste("DEBUG: variable_selectors renderUI called"))
+    print(paste("DEBUG: variable_selectors renderUI called - restore_mediators_pending:", restore_mediators_pending, "expected_count:", expected_mediator_count))
     print(paste("DEBUG: rv$original_dataset is NULL?", is.null(rv$original_dataset)))
     print(paste("DEBUG: input$process_model:", input$process_model))
     
@@ -599,6 +635,10 @@
                    choices = c("Select variable" = "", vars), 
                    selected = "")
       ),
+      # CRITICAL: mediator_list_ui must re-render when restore flags are set
+      # Access restore flags here to make variable_selectors reactive to them
+      # This ensures mediator_list_ui (nested inside) also re-renders
+      # Force dependency by accessing the values (we already accessed them at the top of renderUI)
       uiOutput("mediator_list_ui"),
       selectInput("covariates", "Covariates (optional)", vars, multiple = TRUE),
       # Use JavaScript to properly disable/enable inputs based on model

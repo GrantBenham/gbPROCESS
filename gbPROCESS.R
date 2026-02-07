@@ -53,6 +53,7 @@ server <- function(input, output, session) {
     restore_labels_pending = FALSE,
     labels_to_restore = NULL,
     restore_in_progress = FALSE,  # Flag to prevent restore observer from running multiple times
+    mediator_restore_trigger_count = 0,  # Counter to force mediator_list_ui to re-render
     # Track previous variable values to detect when variables change
     previous_predictor_var = NULL,
     previous_outcome_var = NULL,
