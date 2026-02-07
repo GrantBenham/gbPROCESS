@@ -303,7 +303,7 @@ run_process_analysis <- function(analysis_dataset, remove_outliers = FALSE, outl
     if(is.null(center_value) || length(center_value) == 0 || is.na(center_value)) {
       center_value <- 0
     }
-    if(model_num == 4 && input$xmint) {
+    if(model_num == 4 && isTRUE(input$xmint)) {
       center_value <- 0
     }
     
@@ -346,7 +346,7 @@ run_process_analysis <- function(analysis_dataset, remove_outliers = FALSE, outl
         }
         process_args$m <- mediator_arg
         
-        if(model_num %in% c(4, 6) && input$pairwise_contrasts && length(current_mediators) > 1) {
+        if(model_num %in% c(4, 6) && isTRUE(input$pairwise_contrasts) && length(current_mediators) > 1) {
           process_args$contrast <- 1
         }
       }
@@ -455,8 +455,8 @@ run_process_analysis <- function(analysis_dataset, remove_outliers = FALSE, outl
     if(isTRUE(input$modelres)) process_args$modelres <- 1
     
     # xmint handling
-    if(model_num == 4 && input$xmint) {
-      if(input$xmtest) {
+    if(model_num == 4 && isTRUE(input$xmint)) {
+      if(isTRUE(input$xmtest)) {
         stop("Error: 'Allow X by M interaction' and 'Test for X by M interaction' cannot both be enabled. When 'Allow X by M interaction' is enabled, Model 4 is converted to Model 74, which makes the test option unavailable. Please disable one of these options.")
       }
       process_args$xmint <- 1

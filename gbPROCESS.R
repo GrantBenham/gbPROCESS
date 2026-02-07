@@ -52,6 +52,7 @@ server <- function(input, output, session) {
     mediator_restore_retry_count = NULL,  # Track retry count to prevent infinite loops
     restore_labels_pending = FALSE,
     labels_to_restore = NULL,
+    restore_in_progress = FALSE,  # Flag to prevent restore observer from running multiple times
     # Track previous variable values to detect when variables change
     previous_predictor_var = NULL,
     previous_outcome_var = NULL,

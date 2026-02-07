@@ -254,7 +254,7 @@ ui <- fluidPage(
                 tags$div(
                   style = "margin-top: 5px;",
                   tags$div(
-                    title = "Percentiles (16th, 50th, 84th): Uses the 16th, 50th (median), and 84th percentiles of the moderator distribution. This is the default because PROCESS visualization data (used for generating plots) always uses percentiles. Selecting percentiles ensures consistency between probing results and plot visualizations. More robust to outliers and non-normal distributions. Recommended when the moderator distribution is skewed or has outliers.",
+                    title = "Percentiles (16th, 50th, 84th): Uses the 16th, 50th (median), and 84th percentiles of the moderator distribution for probing moderation analysis. This is the default and ensures consistency with PROCESS plot data, which always uses percentiles. More robust to outliers and non-normal distributions. Recommended when the moderator distribution is skewed or has outliers.",
                     tags$label(
                       tags$input(type = "radio", name = "conditioning_values", value = "1", checked = "checked"),
                       "Percentiles (16th, 50th, 84th)",
@@ -262,7 +262,7 @@ ui <- fluidPage(
                     )
                   ),
                   tags$div(
-                    title = "Moments (Mean ±1 SD): Uses the mean and one standard deviation above and below the mean. More interpretable and commonly used in reporting. However, note that PROCESS visualization data (used for generating plots) always uses percentiles regardless of this setting. If you select moments, the probing results in the text output will use mean ±1 SD, but the plot visualizations will still show percentile-based values (16th, 50th, 84th), so they may not match precisely. Use this option if you want probing results to match your reporting style, understanding that plots will display percentile-based values.",
+                    title = "Moments (Mean ±1 SD): Uses the mean and one standard deviation above and below the mean for probing moderation analysis. More interpretable and commonly used in reporting. Note: PROCESS plot data always uses percentiles regardless of this setting, so if you select moments, the probing results in the text output will use mean ±1 SD, but the plot visualizations will show percentile-based values (16th, 50th, 84th), which may not match precisely.",
                     tags$label(
                       tags$input(type = "radio", name = "conditioning_values", value = "0"),
                       "Moments (Mean ±1 SD)",
